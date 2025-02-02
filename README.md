@@ -102,3 +102,78 @@ The script will:
 - Call DeepSeek R1 (via Fireworks) to process the query
 - Call `search_google`  tools if additional data is needed
 - Show any errors or incomplete JSON in logs (visible to users and fed back to the model for self-correction)
+
+
+## Running Example
+
+Below is a **condensed output** from running `main.py`. It shows how the **DeepSeek R1** model (accessed through **Fireworks**) iteratively reasons about a question, calls external functions, and generates a final answer with citations.
+
+<details>
+<summary>Example Agent Interaction</summary>
+
+```
+[SYSTEM_PROMPT] ... (System instructions and schema requirements) ...
+
+[AGENT] Starting agent with query: "What was the impact on stock prices due to DeepSeek's AI model release, and what are the societal implications?"
+
+[ITERATION] 1/6 
+[API] Sending request to DeepSeek API... 
+[API] DeepSeek API response time: 23.71 seconds
+
+DeepSeek reasoning: 
+"We should gather recent data from 2024-2025 to verify stock market reactions after the model release ... We'll need to call 'search_google' with relevant queries."
+
+Structured output: 
+{
+    "keep_going": true,
+    "reason_for_keep_going": "Initial analysis requires verification...",
+    "answer": "Preliminary analysis suggests DeepSeek's AI model boosted investor sentiment...",
+    "function_calls": [
+        {
+            "name": "search_google",
+            "arguments": {
+                "query": "DeepSeek AI model release stock price impact 2024-2025",
+                "start_date": "01/01/2024",
+                "end_date": "12/31/2024"
+            }
+        }
+    ]
+}
+
+[TOOLS] Processing function calls... 
+→ Calling 'search_google' with query="DeepSeek AI model release stock price impact 2024-2025"
+
+[TOOL CALL RESULT] (Receives search results from SerpAPI)
+
+[ITERATION] 2/6
+[API] Sending request to DeepSeek API...
+[API] DeepSeek API response time: 53.48 seconds
+
+DeepSeek reasoning:
+"We see multiple articles referencing a market plunge in late January 2025, plus bans by the U.S. Navy and Italy over security concerns..."
+
+Structured output:
+{
+    "keep_going": false,
+    "answer": "DeepSeek's AI model release in late 2024 led to mixed stock market impacts and significant societal concerns. While some stocks saw short-term gains, U.S. tech faced pressure amid geopolitical tensions...",
+    "summary_reasoning": "...",
+    "function_calls": null
+}
+
+[COMPLETE] Final Output:
+DeepSeek's AI model release in late 2024 led to mixed stock market impacts ... Semiconductor suppliers like SK Hynix benefited, with their HBM chips ... Societally, ethical and security concerns prompted institutional bans ...
+
+Key Sources:
+- [2025-01-27] Chinese AI App DeepSeek Rattles Tech Markets
+- [2025-01-28] U.S. Navy bans use of DeepSeek
+- [2025-01-30] Italy bans DeepSeek AI ...
+```
+</details>
+
+### Key Takeaways from the Example
+
+1. **Iterative Reasoning**: The model first proposes a partial answer, then calls functions (e.g., Google search) to validate or expand its knowledge.  
+2. **Self-Healing**: If any errors appeared (like missing JSON fields), the agent could correct them in the next iteration.  
+3. **Rich Sources**: The final answer includes links to the most relevant articles discovered during the search phase, complete with context and citations.
+
+Run `python main.py` yourself to see the full output and experiment with different queries or new tools!
