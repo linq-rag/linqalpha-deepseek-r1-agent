@@ -3,7 +3,7 @@ from typing import Any, Union, List, Dict
 
 def build_function_call_model(func_meta: Dict[str, Any], model_name="FunctionCall") -> type[BaseModel]:
     """
-    Given a single function metadata dict:
+    Given a single function metadata dict:s
       {
         "name": "compute_integral",
         "parameters": {
