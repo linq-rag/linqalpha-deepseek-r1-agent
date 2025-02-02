@@ -78,7 +78,7 @@ def build_output_model(
     """
     Creates a top-level Pydantic model with:
      - keep_going: bool
-     - reason: str
+     - reason_for_keep_going: str
      - final_answer: str|None
      - function_calls: list of T, where T is union of tool models
        (but .parse() doesn't handle union at top-level easily, so we might do an 'anyOf' manually)
@@ -94,11 +94,12 @@ def build_output_model(
 
     # Now build the final top-level
     fields_dict = {
-        "keep_going": (bool, Field(..., description="whether to keep going")),
-        "reason": (str, Field(..., description="explanation")),
-        "intermediate_answer": (Union[str, None], Field(None, description="intermediate results")),
-        "final_answer": (Union[str, None], Field(None, description="final answer if done")),
-        "function_calls": (Union[FunctionListModel, None], Field(None, description="list of function calls")),
+        "keep_going": (bool, Field(..., description="Whether to continue processing")),
+        "reason_for_keep_going": (str, Field(..., description="Explanation of why processing should continue")),
+        "intermediate_answer": (Union[str, None], Field(None, description="Intermediate answer to track progress so far")),
+        "final_answer": (Union[str, None], Field(None, description="Final answer when processing is complete")),
+        "summary_reasoning": (str, Field(..., description="Summary of the reasoning process, including: functions called and their purpose, arguments used, outputs received, how the answer was refined based on these outputs, and details of the iterative process")),
+        "function_calls": (Union[FunctionListModel, None], Field(None, description="List of function calls should be provided if keep_going is true")),
     }
 
     OutputModel = create_model(
