@@ -113,9 +113,9 @@ def build_output_model(
     OutputModel.Config = Config
     return OutputModel
 
-def build_dynamic_openai_schema(tools_metadata: List[Dict[str, Any]]) -> type[BaseModel]:
+def build_dynamic_output_schema(tools_metadata: List[Dict[str, Any]]) -> type[BaseModel]:
     """
-    Creates a Pydantic model for OpenAI function calling based on tools metadata.
+    Creates a Pydantic model for function calling based on tools metadata.
     
     Args:
         tools_metadata: List of tool/function metadata dictionaries
@@ -142,51 +142,33 @@ def build_dynamic_openai_schema(tools_metadata: List[Dict[str, Any]]) -> type[Ba
 if __name__ == "__main__":
     tools_metadata = [
         {
-            "type": "function",
-            "function": {
-                "name": "compute_integral",
-                "description": "Computes the definite integral of a math expression (x) between two bounds.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "expression": {
-                            "type": "string",
-                            "description": "Mathematical expression in terms of x (e.g., 'sin(x)')"
-                        },
-                        "lower_bound": {
-                            "type": "number",
-                            "description": "Lower bound of integration."
-                        },
-                        "upper_bound": {
-                            "type": "number",
-                            "description": "Upper bound of integration."
-                        }
-                    },
-                    "required": ["expression", "lower_bound", "upper_bound"],
-                    "additionalProperties": False
+        "type": "function",
+        "function": {
+            "name": "search_google",
+            "description": "Search Google for a given query, returning top results. Optionally specify a date range.",
+            "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                "type": "string",
+                "description": "The search query."
+                },
+                "start_date": {
+                "type": "string",
+                "description": "The start date for filtering search results (MM/DD/YYYY). If omitted, date filtering won't be applied."
+                },
+                "end_date": {
+                "type": "string",
+                "description": "The end date for filtering search results (MM/DD/YYYY). If omitted, date filtering won't be applied."
                 }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "prove_theorem",
-                "description": "Provides a high-level outline for proving a theorem.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "statement": {
-                            "type": "string",
-                            "description": "The theorem statement to prove."
-                        }
-                    },
-                    "required": ["statement"],
-                    "additionalProperties": False
+                },
+                "required": ["query"],
+                "additionalProperties": False
                 }
             }
         }
     ]
 
-    DynamicOutputModel = build_dynamic_openai_schema(tools_metadata)
+    DynamicOutputModel = build_dynamic_output_schema(tools_metadata)
 
     print(DynamicOutputModel.model_json_schema())
