@@ -1,10 +1,10 @@
 import re
 import os
+import sys
 import time
 import json
 import requests
 import logging
-import hashlib
 from datetime import datetime
 from typing import Any, Dict, List
 from pydantic import BaseModel
@@ -21,13 +21,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
-HEADERS = {
-    "Accept": "application/json",
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {FIREWORKS_API_KEY}"
-}
+SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
+
+if not FIREWORKS_API_KEY:
+    raise ValueError("Missing FIREWORKS_API_KEY environment variable")
+if not SERPAPI_API_KEY:
+    raise ValueError("Missing SERPAPI_API_KEY environment variable")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -35,12 +34,8 @@ logger = logging.getLogger(__name__)
 def safe_log(message):
     try:
         logger.info(message)
-    except Exception:
-        pass  # Silently ignore logging errors
-
-def generate_short_hash(input_str: str) -> str:
-    """Generate a short hash (8 characters) for a given input string."""
-    return hashlib.md5(input_str.encode()).hexdigest()[:8]
+    except Exception as e:
+        print(f"Logging failed: {e} - original message: {message}", file=sys.stderr)
 
 # -----------------------------
 # Define Search Functions (Tools)
@@ -53,7 +48,7 @@ def search_google(query, start_date=None, end_date=None, num_results=50):
     params = {
         'engine': 'google',
         'q': query,
-        'api_key': os.getenv("SERPAPI_API_KEY")
+        'api_key': SERPAPI_API_KEY
     }
 
     # If both start_date and end_date are provided, construct tbs parameter
@@ -168,14 +163,17 @@ def get_deepseek_response(
     """
     client = OpenAI(
         base_url="https://api.fireworks.ai/inference/v1",
-        api_key=os.getenv("FIREWORKS_API_KEY"),
+        api_key=FIREWORKS_API_KEY,
     )
 
+    start_time = time.time()
     response = client.chat.completions.create(
         model=model,
         response_format={"type": "json_object", "schema": output_schema.model_json_schema()},
         messages=[{"role": "user", "content": str(messages)}],
     )
+    end_time = time.time()
+    safe_log(f"DeepSeek API response time: {end_time - start_time:.2f} seconds")
     
     return parse_deepseek_response(response.choices[0].message.content, output_schema)
 
@@ -188,13 +186,14 @@ class Agent:
                  query: str,
                  tools_metadata: List[Dict[str, Any]], 
                  tools_executor: Dict[str, Any],
-                 output_schema: type[BaseModel]):
+                 output_schema: type[BaseModel],
+                 max_iterations: int = 6):
         self.system_prompt = system_prompt
         self.query = query
         self.tools_metadata = tools_metadata
         self.tools_executor = tools_executor
         self.output_schema = output_schema
-        self.max_iterations = 6
+        self.max_iterations = max_iterations
 
     def run(self) -> str:
         messages = [
@@ -273,7 +272,7 @@ class Agent:
                 
                 # If keep_going is False, return the final answer
                 if not structured_output.keep_going:
-                    safe_log(f"Stopping iterations: {structured_output.reason}")
+                    safe_log(f"Stopping iterations: {structured_output.reason_for_keep_going}")
                     return structured_output.final_answer
                 
                 # Otherwise continue to next iteration with updated messages
@@ -335,13 +334,14 @@ If you want to streaming your reasnoing and response over and over again to make
 ### Output Schema Requirements:
 Your response must follow this JSON structure:
 {{
-    "keep_going": "boolean",  /* indicates if more function calls are needed */
-    "reason": "string",      /* explains the decision to continue or stop */
-    "intermediate_answer": "string | null",  /* provides current findings */
-    "final_answer": "string | null",  /* gives complete response when ready */
-    "function_calls": [    /* specifies functions to call */
+    "keep_going": boolean,  /* indicates whether to continue processing */
+    "reason_for_keep_going": string,  /* explanation of why processing should continue */
+    "intermediate_answer": string | null,  /* intermediate answer to track progress so far */
+    "final_answer": string | null,  /* final answer when processing is complete */
+    "summary_reasoning": string,  /* summary of the reasoning process */
+    "function_calls": [    /* list of function calls should be provided if keep_going is true */
         {{
-            "name": "string",  /* function name */
+            "name": string,  /* function name */
             "arguments": {{   /* function parameters */
                 /* specific arguments for the function */
             }}
@@ -352,9 +352,10 @@ Your response must follow this JSON structure:
 Example Output:
 {{
     "keep_going": true,
-    "reason": "Need to gather recent information about the topic",
+    "reason_for_keep_going": "Need to gather recent information about the topic",
     "intermediate_answer": "Initiating web search for recent developments",
     "final_answer": null,
+    "summary_reasoning": "Planning to search for recent news about DeepSeek's AI model release and its market impact. Will focus on stock price movements and broader societal implications.",
     "function_calls": [
         {{
             "name": "search_google",
@@ -393,6 +394,7 @@ When finalizing your answer in the "final_answer" field, please provide detailed
 # Main Execution
 # -----------------------------
 if __name__ == "__main__":
+    MAX_ITERATIONS = 6
     # Generate system prompt using the new function
     system_prompt = make_system_prompt(tools_metadata)
     safe_log(system_prompt)
@@ -404,6 +406,7 @@ if __name__ == "__main__":
         tools_metadata=tools_metadata,
         tools_executor=tools_executor,
         output_schema=output_schema,
+        max_iterations=MAX_ITERATIONS
     )
     
     final_answer = agent.run()
