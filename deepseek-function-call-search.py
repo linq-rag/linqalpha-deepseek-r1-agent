@@ -31,9 +31,14 @@ if not SERPAPI_API_KEY:
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-def safe_log(message):
+def safe_log(message, prefix=None):
+    """Log messages with consistent formatting and optional prefix."""
     try:
-        logger.info(message)
+        formatted_message = ""
+        if prefix:
+            formatted_message = f"[{prefix}] "
+        formatted_message += str(message)
+        logger.info(formatted_message)
     except Exception as e:
         print(f"Logging failed: {e} - original message: {message}", file=sys.stderr)
 
@@ -145,35 +150,21 @@ def parse_deepseek_response(content: str, model_schema: type[BaseModel]) -> tupl
     
     return reasoning, model_data
 
-def get_deepseek_response(
-                         messages: List[Dict[str, Any]],
-                         output_schema: type[BaseModel],
-                         model: str = "accounts/fireworks/models/deepseek-r1") -> tuple[str, BaseModel]:
-    """
-    Get and parse DeepSeek response for a given prompt and model schema.
-    
-    Args:
-        client: OpenAI client instance
-        prompt: User prompt/question
-        model_schema: Pydantic model class for response validation
-        model: DeepSeek model identifier
-        
-    Returns:
-        Tuple of (reasoning string, parsed model data)
-    """
+def get_deepseek_response(messages: List[Dict[str, Any]], output_schema: type[BaseModel], model: str = "accounts/fireworks/models/deepseek-r1") -> tuple[str, BaseModel]:
     client = OpenAI(
         base_url="https://api.fireworks.ai/inference/v1",
         api_key=FIREWORKS_API_KEY,
     )
 
     start_time = time.time()
+    safe_log("Sending request to DeepSeek API...", "API")
     response = client.chat.completions.create(
         model=model,
         response_format={"type": "json_object", "schema": output_schema.model_json_schema()},
         messages=[{"role": "user", "content": str(messages)}],
     )
     end_time = time.time()
-    safe_log(f"DeepSeek API response time: {end_time - start_time:.2f} seconds")
+    safe_log(f"DeepSeek API response time: {end_time - start_time:.2f} seconds", "API")
     
     return parse_deepseek_response(response.choices[0].message.content, output_schema)
 
@@ -195,39 +186,31 @@ class Agent:
         self.output_schema = output_schema
         self.max_iterations = max_iterations
 
-    def run(self) -> str:
+    def run(self) -> tuple[str, BaseModel]:
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": self.query}
         ]
         
+        safe_log(f"Starting agent with query: {self.query}", "AGENT")
+        
         for iteration in range(self.max_iterations):
-            safe_log(f"=== Iteration {iteration} ===")
+            safe_log(f"\n{'='*50}")
+            safe_log(f"Starting iteration {iteration + 1}/{self.max_iterations}", "ITERATION")
             
             try:
-            
-                # Get response from DeepSeek
                 reasoning, structured_output = get_deepseek_response(
                     messages=messages,
                     output_schema=self.output_schema,
                 )
 
-                print(reasoning)
-                print("\n\n")
-                safe_log(f"Validated output: {structured_output}")
-                pass
-            
-                assistant_message = structured_output.intermediate_answer or structured_output.final_answer
-                # Add assistant's intermediate/final answer to messages
-                messages.append({
-                    "role": "assistant",
-                    "content": "This is your reasoning and the output from the previous iteration: \n\n" + str(reasoning) + "\n\n" + str(structured_output)
-                })
+                safe_log("DeepSeek reasoning:", "REASONING")
+                safe_log(reasoning)
+                safe_log("Structured output:", "OUTPUT")
+                safe_log(structured_output.model_dump_json(indent=2))
 
-                pass
-
-                # Execute any function calls and add results to messages
                 if structured_output.function_calls:
+                    safe_log("Processing function calls...", "TOOLS")
                     tool_calls_results = []
                     # Create a set of unique function calls based on name and arguments
                     seen_calls = set()
@@ -247,9 +230,9 @@ class Agent:
                         for tool_call in unique_calls:
                             func_name = str(tool_call.name.value)  # Convert enum to string directly
                             if func_name in self.tools_executor:
-                                safe_log(f"Calling function '{func_name}' with args: {tool_call.arguments}")
+                                safe_log(f"Calling function '{func_name}' with args: {tool_call.arguments.model_dump_json(indent=2)}")
                                 tool_func = self.tools_executor[func_name]
-                                args_dict = {k: v for k, v in tool_call.arguments.dict().items()}  # Convert to plain dict
+                                args_dict = {k: v for k, v in tool_call.arguments.model_dump().items()}  # Changed from dict() to model_dump()
                                 tool_result = tool_func(**args_dict)
                                 safe_log(f"Result from '{func_name}': {json.dumps(tool_result, indent=2)}")
                                 
@@ -270,24 +253,22 @@ class Agent:
 
                         safe_log("Finished function calls.. resulsts will be submitted to DeepSeek")
                 
-                # If keep_going is False, return the final answer
                 if not structured_output.keep_going:
-                    safe_log(f"Stopping iterations: {structured_output.reason_for_keep_going}")
-                    return structured_output.final_answer
+                    safe_log("Stopping iterations: ", "COMPLETE")
+                    safe_log(structured_output.reason_for_keep_going)
+                    return reasoning, structured_output
                 
-                # Otherwise continue to next iteration with updated messages
-                safe_log("Continuing to next iteration...")
+                safe_log("Continuing to next iteration...", "ITERATION")
                     
             except Exception as e:
-                safe_log(f"Error processing output: {e}")
+                safe_log(f"Error in iteration {iteration + 1}: {e}", "ERROR")
                 messages.append({
-                        "role": "error response",
-                        "content": f"Error processing your output: {e}. Please reflect on this error and adjust your response accordingly to avoid this issue."
-                    })
+                    "role": "error response",
+                    "content": f"Error processing your output: {e}. Please reflect on this error and adjust your response accordingly to avoid this issue."
+                })
         
-        # If we hit max iterations, return the last response
-        safe_log(f"Hit maximum iterations ({self.max_iterations})")
-        return assistant_message
+        safe_log(f"Hit maximum iterations ({self.max_iterations})", "COMPLETE")
+        return reasoning, structured_output
 
 # -----------------------------
 # Define the System Prompt
@@ -336,8 +317,7 @@ Your response must follow this JSON structure:
 {{
     "keep_going": boolean,  /* indicates whether to continue processing */
     "reason_for_keep_going": string,  /* explanation of why processing should continue */
-    "intermediate_answer": string | null,  /* intermediate answer to track progress so far */
-    "final_answer": string | null,  /* final answer when processing is complete */
+    "answer": string,  /* intermediate or final answer to track progress so far */
     "summary_reasoning": string,  /* summary of the reasoning process */
     "function_calls": [    /* list of function calls should be provided if keep_going is true */
         {{
@@ -349,12 +329,13 @@ Your response must follow this JSON structure:
     ]
 }}
 
+Without these fields, your response will be invalid and cause an error. Function calls are good to be None if you don't need to use them.
+
 Example Output:
 {{
     "keep_going": true,
     "reason_for_keep_going": "Need to gather recent information about the topic",
-    "intermediate_answer": "Initiating web search for recent developments",
-    "final_answer": null,
+    "answer": "DeepSeek's AI model release has had a significant impact on the stock market, with stock prices rising due to increased investor confidence and anticipation of the model's capabilities. The societal implications are vast, including potential job displacement in certain industries, increased automation, and ethical considerations surrounding AI development and deployment.",
     "summary_reasoning": "Planning to search for recent news about DeepSeek's AI model release and its market impact. Will focus on stock price movements and broader societal implications.",
     "function_calls": [
         {{
@@ -371,16 +352,16 @@ Example Output:
 Current Date: {date}
 Current Time: {time}
 
-### Final Answer with Citation
-For the final answer field, please cite sources with the most authoritative and reputable sources being prioritized. Use clickable links in markdown format, including the date and title of the article.
+### Answer with Citation
+For the answer field, please cite sources with the most authoritative and reputable sources being prioritized. Use clickable links in markdown format, including the date and title of the article.
 
 Example:
 - [2024-01-01] [Title of the Article](https://www.example.com/article)
 
 However, do not simply list up the sources with bullet points, but try to explain first in a logical narrative, and then list up the sources. It's always great to use the [INDEX] to refer to the sources and provide a detailed explanation for the sources after the narrative at the end of the answer.
 
-### Final Answer with Detailed Reasoning and Source-Linked Explanations
-When finalizing your answer in the "final_answer" field, please provide detailed reasoning and explanations with linked sources. This should enable users to fully understand the answer by reading only your final response. The process involves rationally piecing together information from sources and intermediate answers, logically connecting the dots to form a comprehensive answer.
+### Answer with Detailed Reasoning and Source-Linked Explanations
+When finalizing your answer in the "answer" field, please provide detailed reasoning and explanations with linked sources. This should enable users to fully understand the answer by reading only your final response. The process involves rationally piecing together information from sources and intermediate answers, logically connecting the dots to form a comprehensive answer.
 """
 
     # Format the template with our values
@@ -397,7 +378,7 @@ if __name__ == "__main__":
     MAX_ITERATIONS = 6
     # Generate system prompt using the new function
     system_prompt = make_system_prompt(tools_metadata)
-    safe_log(system_prompt)
+    safe_log(system_prompt, "SYSTEM_PROMPT")
     output_schema = build_dynamic_output_schema(tools_metadata)
 
     agent = Agent(
@@ -409,5 +390,8 @@ if __name__ == "__main__":
         max_iterations=MAX_ITERATIONS
     )
     
-    final_answer = agent.run()
-    print("Final Answer:", final_answer)
+    reasoning, structured_output = agent.run()
+    safe_log("Final Reasoning:", "COMPLETE")
+    safe_log(reasoning)
+    safe_log("Final Output:", "COMPLETE")
+    safe_log(structured_output.answer)
