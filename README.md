@@ -103,7 +103,6 @@ The script will:
 - Call `search_google`  tools if additional data is needed
 - Show any errors or incomplete JSON in logs (visible to users and fed back to the model for self-correction)
 
-
 ## Running Example
 
 Below is a **condensed output** from running `main.py`. It shows how the **DeepSeek R1** model (accessed through **Fireworks**) iteratively reasons about a question, calls external functions, and generates a final answer with citations.
@@ -169,11 +168,5 @@ Key Sources:
 - [2025-01-30] Italy bans DeepSeek AI ...
 ```
 </details>
-
-### Key Takeaways from the Example
-
-1. **Iterative Reasoning**: The model first proposes a partial answer, then calls functions (e.g., Google search) to validate or expand its knowledge.  
-2. **Self-Healing**: If any errors appeared (like missing JSON fields), the agent could correct them in the next iteration.  
-3. **Rich Sources**: The final answer includes links to the most relevant articles discovered during the search phase, complete with context and citations.
 
 Run `python main.py` yourself to see the full output and experiment with different queries or new tools!
