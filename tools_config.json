@@ -1,0 +1,38 @@
+{
+    "executor_map": {
+      "search_google": {
+        "module": "tools.search",
+        "function_name": "search_google"
+      }
+    },
+  
+    "metadata": [
+      {
+        "type": "function",
+        "function": {
+          "name": "search_google",
+          "description": "Search Google for a given query, returning top results. Optionally specify a date range.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "The search query."
+              },
+              "start_date": {
+                "type": "string",
+                "description": "The start date for filtering search results (MM/DD/YYYY)."
+              },
+              "end_date": {
+                "type": "string",
+                "description": "The end date for filtering search results (MM/DD/YYYY)."
+              }
+            },
+            "required": ["query"],
+            "additionalProperties": false
+          }
+        }
+      }
+    ]
+  }
+  

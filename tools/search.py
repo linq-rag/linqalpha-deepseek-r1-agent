@@ -47,30 +47,3 @@ def search_google(query, start_date=None, end_date=None, num_results=50):
         return {'error': f'SerpAPI request error: {str(e)}'}
     except Exception as e:
         return {'error': f'Unexpected error: {str(e)}'}
-
-SEARCH_GOOGLE_TOOL_METADATA = {
-        "type": "function",
-        "function": {
-            "name": "search_google",
-            "description": "Search Google for a given query, returning top results. Optionally specify a date range.",
-            "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                "type": "string",
-                "description": "The search query."
-                },
-                "start_date": {
-                "type": "string",
-                "description": "The start date for filtering search results (MM/DD/YYYY). If omitted, date filtering won't be applied."
-                },
-                "end_date": {
-                "type": "string",
-                "description": "The end date for filtering search results (MM/DD/YYYY). If omitted, date filtering won't be applied."
-                }
-            },
-            "required": ["query"],
-            "additionalProperties": False
-            }
-        }
-    }
