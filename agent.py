@@ -86,7 +86,7 @@ class Agent:
                             "tool_calls": tool_calls_results
                         })
 
-                        safe_log("Finished function calls.. resulsts will be submitted to DeepSeek")
+                        safe_log("Finished function calls.. results will be submitted to DeepSeek")
                 
                 if not structured_output.keep_going:
                     safe_log("Stopping iterations: ", "COMPLETE")
