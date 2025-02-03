@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, create_model
 from typing import Any, Union, List, Dict
+from enum import Enum
 
 def build_function_call_model(func_meta: Dict[str, Any], model_name="FunctionCall") -> type[BaseModel]:
     """
@@ -19,16 +20,11 @@ def build_function_call_model(func_meta: Dict[str, Any], model_name="FunctionCal
     with the 'arguments' field carefully built from the function's parameters.
     """
 
-    # Step 1) The 'name' is a required string set to EXACTLY the function name
-    #         If you want it to be an enum, we can do so. Or we can just store it as a string. 
-    #         But for parse() to be super strict, you might do:
-    from enum import Enum
-    FuncNameEnum = Enum("FuncNameEnum", [(func_meta["name"], func_meta["name"])])  # single possible enum
+    # Step 1) Create a single-value Enum for strict function name validation
+    func_name = func_meta["name"]
+    FuncNameEnum = Enum(f"{func_name}Enum", [(func_name, func_name)])  # Creates Enum with single value
 
     # Step 2) Build a dynamic "arguments" sub-model from the function's "properties"
-    #         This is a bit more advanced: we iterate properties, convert them to fields, etc.
-    #         We'll do a minimal version: everything is "str" or "float" depending on the metadata, 
-    #         or fallback to "Any".
     properties = func_meta["parameters"].get("properties", {})
     required = func_meta["parameters"].get("required", [])
     sub_fields = {}
@@ -56,12 +52,11 @@ def build_function_call_model(func_meta: Dict[str, Any], model_name="FunctionCal
         **sub_fields
     )
 
-    # Step 3) The top-level function call model: must have "name" and "arguments"
-    #         and also set `additionalProperties=False` if we want strict mode
-    #         For parse() to honor it, we must do something like:
+    # Step 3) The top-level function call model: must have "name", "arguments", and "reason"
     base_props = {
         "name": (FuncNameEnum, Field(..., description="Function name")),
         "arguments": (ArgumentsModel, Field(..., description="Function arguments object")),
+        "reason": (str, Field(..., description="Explanation of why this specific function is being called with these arguments")),
     }
     # We'll create a dynamic model class
     FunctionCallModel = create_model(

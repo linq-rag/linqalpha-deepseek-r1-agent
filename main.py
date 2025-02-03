@@ -19,9 +19,11 @@ if __name__ == "__main__":
     safe_log(system_prompt, "SYSTEM_PROMPT")
     output_schema = build_dynamic_output_schema(tools_metadata)
 
+    query="What was the impact on stock prices due to DeepSeek's AI model release, and what are the societal implications?",
+
     agent = Agent(
         system_prompt=system_prompt,
-        query="What was the impact on stock prices due to DeepSeek's AI model release, and what are the societal implications?",
+        query=query,
         tools_metadata=tools_metadata,
         tools_executor=tools_executor,
         output_schema=output_schema,

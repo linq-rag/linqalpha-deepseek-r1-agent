@@ -57,6 +57,7 @@ Your response must follow this JSON structure:
             "arguments": {{   /* function parameters */
                 /* specific arguments for the function */
             }}
+            "reason": string,  /* explanation of why this specific function is being called with these arguments */
         }}
     ]
 }}

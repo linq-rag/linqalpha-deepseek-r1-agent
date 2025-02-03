@@ -69,7 +69,7 @@ class Agent:
                                 tool_func = self.tools_executor[func_name]
                                 args_dict = {k: v for k, v in tool_call.arguments.model_dump().items()}  # Changed from dict() to model_dump()
                                 tool_result = tool_func(**args_dict)
-                                safe_log(f"Result from '{func_name}': {json.dumps(tool_result, indent=2)}", "TOOL CALL RESULT")
+                                safe_log(f"Result from '{func_name}': {json.dumps(tool_result, indent=2)} with args: {json.dumps(args_dict, indent=2)}", "TOOL CALL RESULT")
                                 
                                 tool_calls_results.append({
                                     "function": {
