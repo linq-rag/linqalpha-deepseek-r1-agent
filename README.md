@@ -1,10 +1,8 @@
 # linqalpha-deepseek-r1-agent
 
-**Authors**:  
-- *[Suyeol Yun](https://github.com/syyunn), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
-- *[Subeen Pang](https://www.linkedin.com/in/subeen-pang/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
-- *[Youngjin Kim](https://www.linkedin.com/in/yjin-kim/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
-- *[Chanyeol Jacob Choi](https://www.linkedin.com/in/chanyeolchoi/), CEO @ [Linqalpha](https://www.linqalpha.com)*  
+**Author**: *[Suyeol Yun](https://github.com/syyunn), AI Agent Architect & Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*
+
+---
 
 ## Overview
 **linqalpha-deepseek-r1-agent** demonstrates an **iterative function-calling agent** that uses [DeepSeek R1](https://github.com/deepseek-ai/DeepSeek-R1)—an advanced reasoning model—and relies on [Fireworks](https://fireworks.ai/models/fireworks/deepseek-r1) for **convenient inference and structured JSON output**. This design allows the agent to:
