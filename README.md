@@ -24,7 +24,46 @@ An **iterative agent**:
 
 This approach emphasizes **transparency**, as the agent outputs a chain of reasoning steps. Developers or end users can trace how each partial result influenced the final outcome.
 
----
+## Parallel Function Calls & Reasoning Transparency
+
+A key feature of this agent is its ability to **execute multiple function calls in parallel** within a single interaction. This design:
+
+1. **Improves Efficiency**:  
+   - Can gather data from multiple sources simultaneously
+   - Reduces total processing time by avoiding sequential API calls
+   - Allows cross-referencing of information from different tools
+
+2. **Enhanced Reasoning Visibility**:  
+   Each function call requires an explicit `reason` field explaining:
+   - Why this specific function was chosen
+   - How its arguments were determined
+   - What information it's expected to provide
+
+Example of parallel function calls with reasoning:
+```json
+{
+  "function_calls": [
+    {
+      "name": "search_google",
+      "arguments": {
+        "query": "DeepSeek AI stock price impact",
+        "start_date": "2024-01-01"
+      },
+      "reason": "To gather recent financial market reactions to DeepSeek's release"
+    },
+    {
+      "name": "search_google",
+      "arguments": {
+        "query": "DeepSeek AI technical capabilities comparison",
+        "start_date": null
+      },
+      "reason": "To understand technical differentiators affecting market perception"
+    }
+  ]
+}
+```
+
+This combination of parallel execution and explicit reasoning helps the agent work more efficiently while maintaining full transparency in its decision-making process.
 
 ## Why Reasoning + Function Calls?
 1. **Transparency**:  
@@ -127,16 +166,26 @@ Structured output:
     "keep_going": true,
     "reason_for_keep_going": "Initial analysis requires verification...",
     "answer": "Preliminary analysis suggests DeepSeek's AI model boosted investor sentiment...",
-    "function_calls": [
-        {
-            "name": "search_google",
-            "arguments": {
-                "query": "DeepSeek AI model release stock price impact 2024-2025",
-                "start_date": "01/01/2024",
-                "end_date": "12/31/2024"
-            }
-        }
-    ]
+    "function_calls":[
+    {
+      "name": "search_google",
+      "arguments": {
+        "query": "DeepSeek AI model release stock market impact 2024-2025",
+        "start_date": "01/01/2024",
+        "end_date": "02/02/2025"
+      },
+      "reason": "To find recent financial data and analyses on stock price changes linked to DeepSeek's AI release."
+    },
+    {
+      "name": "search_google",
+      "arguments": {
+        "query": "societal implications of DeepSeek AI model ethical concerns automation 2024",
+        "start_date": null,
+        "end_date": null
+      },
+      "reason": "To gather authoritative sources discussing AI's broader societal impacts post-release."
+    }
+  ]
 }
 
 [TOOLS] Processing function calls... 
@@ -170,3 +219,5 @@ Key Sources:
 </details>
 
 Run `python main.py` yourself to see the full output and experiment with different queries or new tools!
+
+
