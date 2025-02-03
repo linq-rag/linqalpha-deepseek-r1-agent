@@ -218,7 +218,7 @@ If you want to use this custom config file instead of the default `tools_config.
 
 ```bash
 python main.py \
-  --tools-config my_custom_tools.json \
+  --tools-config tools_config.json \
   --query "Demo how to use my_custom_tool, please!"
 ```
 
