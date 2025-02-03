@@ -144,6 +144,97 @@ The script will:
 - Call `search_google`  tools if additional data is needed
 - Show any errors or incomplete JSON in logs (visible to users and fed back to the model for self-correction)
 
+Below is a **suggested README section** demonstrating how users can **add or modify custom tools** using a JSON config (`tools_config.json`), without having to edit Python code directly. You can place it toward the end of your README—or wherever you think it best fits.
+
+---
+
+## Adding or Customizing Tools
+
+You can define new functions (tools) or modify existing ones **without** editing `main.py` or other core files. We provide a `tools_config.json` file (or you can create your own) that follows [**OpenAI function-calling** conventions](https://platform.openai.com/docs/guides/function-calling#defining-functions). Each tool entry:
+
+- Specifies the **Python module** and **function name** for the agent to call  
+- Contains the **OpenAI-style** function metadata (`"type"`, `"function"`, `"description"`, `"parameters"`, etc.)
+
+### 1. Implement Your Python Function
+
+Create a Python module in the `tools/` directory (or anywhere else in your project). For example:
+
+```python
+# tools/my_custom_tool.py
+
+def my_custom_tool(custom_arg: str) -> dict:
+    """Example custom logic for demonstration purposes."""
+    # Do something interesting here
+    return {"result": f"Your argument was: {custom_arg}"}
+```
+
+### 2. Define It in `tools_config.json`
+
+Edit (or create) a JSON file, e.g. `tools_config.json`:
+
+```jsonc
+{
+  "executor_map": {
+    // The key must match the function's "name" in your metadata.
+    "my_custom_tool": {
+      "module": "tools.my_custom_tool",
+      "function_name": "my_custom_tool"
+    }
+  },
+  "metadata": [
+    {
+      "type": "function",
+      "function": {
+        "name": "my_custom_tool",
+        "description": "Runs a custom operation using 'custom_arg'.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "custom_arg": {
+              "type": "string",
+              "description": "Any string to demonstrate how the tool is called."
+            }
+          },
+          "required": ["custom_arg"],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}
+```
+
+Key fields:
+
+1. **executor_map**: Tells the agent which Python module + function name to dynamically import for each tool.  
+   - In this case, `"my_custom_tool"` loads `tools/my_custom_tool.py` and the function `my_custom_tool`.
+2. **metadata**: An **array** of objects that conform to OpenAI’s “function calling” schema, including:
+   - `"type": "function"`
+   - A nested `"function"` object with `"name"`, `"description"`, and `"parameters"` (JSON schema).
+
+### 3. Run the Agent with Your Tools
+
+If you want to use this custom config file instead of the default `tools_config.json`, you can specify:
+
+```bash
+python main.py \
+  --tools-config my_custom_tools.json \
+  --query "Demo how to use my_custom_tool, please!"
+```
+
+1. **The agent** will **import** your `my_custom_tool()` Python function,  
+2. **Register** it under the name `"my_custom_tool"`,  
+3. **Make it available** for the DeepSeek R1 model to call if/when it decides it’s relevant.
+
+That’s all! The **only** changes required were:
+
+1. Writing a Python function in `tools/`.
+2. Adding a new block in your JSON config.
+
+No changes to `main.py` or other parts of the codebase are needed.
+
+---
+
 ## Running Example
 
 Below is a **condensed output** from running `main.py`. It shows how the **DeepSeek R1** model (accessed through **Fireworks**) iteratively reasons about a question, calls external functions, and generates a final answer with citations.
