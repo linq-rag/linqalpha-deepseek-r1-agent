@@ -3,7 +3,7 @@
 **Authors**:  
 - *[Suyeol Yun](https://github.com/syyunn), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
 - *[Subeen Pang](https://www.linkedin.com/in/subeen-pang/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
-- *[Youngjin Kim](https://www.linkedin.com/in/yjin-kim/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
+- *[Yongjin Kim](https://www.linkedin.com/in/yjin-kim/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
 - *[Chanyeol Jacob Choi](https://www.linkedin.com/in/chanyeolchoi/), CEO @ [Linqalpha](https://www.linqalpha.com)*  
 
 ## Overview
@@ -25,6 +25,8 @@ An **iterative agent**:
 4. **Repeats** until confident in a final answer or until it hits a maximum iteration limit.
 
 This approach emphasizes **transparency**, as the agent outputs a chain of reasoning steps. Developers or end users can trace how each partial result influenced the final outcome.
+
+---
 
 ## Parallel Function Calls & Reasoning Transparency
 
