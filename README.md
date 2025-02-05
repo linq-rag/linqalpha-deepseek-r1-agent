@@ -3,7 +3,7 @@
 **Authors**:  
 - *[Suyeol Yun](https://github.com/syyunn), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
 - *[Subeen Pang](https://www.linkedin.com/in/subeen-pang/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
-- *[Youngjin Kim](https://www.linkedin.com/in/yjin-kim/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
+- *[Yongjin Kim](https://www.linkedin.com/in/yjin-kim/), Fundamental Research Engineer @ [Linqalpha](https://www.linqalpha.com)*  
 - *[Chanyeol Jacob Choi](https://www.linkedin.com/in/chanyeolchoi/), CEO @ [Linqalpha](https://www.linqalpha.com)*  
 
 ## Overview
